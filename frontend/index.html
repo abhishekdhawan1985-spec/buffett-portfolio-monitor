@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warren Buffett Portfolio Monitor</title>
+    <title>Buffett Monitor</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -16,132 +16,40 @@
         const { useState, useEffect } = React;
         
         function App() {
-            const [filings, setFilings] = useState([]);
+            const [data, setData] = useState(null);
             const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
-            const [lastChecked, setLastChecked] = useState(null);
-            
-            const API_URL = 'https://buffett-portfolio-monitor.onrender.com';
-
-            const fetchFilings = async () => {
-                setLoading(true);
-                setError(null);
-                try {
-                    const response = await fetch(API_URL + '/api/filings');
-                    if (!response.ok) throw new Error('API error: ' + response.status);
-                    const data = await response.json();
-                    setFilings(data.filings || []);
-                    setLastChecked(new Date());
-                } catch (err) {
-                    setError(err.message);
-                } finally {
-                    setLoading(false);
-                }
-            };
 
             useEffect(() => {
-                fetchFilings();
+                fetch('https://buffett-portfolio-monitor.onrender.com/api/filings')
+                    .then(res => res.json())
+                    .then(json => {
+                        setData(json);
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        setLoading(false);
+                    });
             }, []);
 
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
-                    <div className="max-w-7xl mx-auto">
-                        
-                        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-6 border border-white/20">
-                            <h1 className="text-4xl font-bold text-white mb-2">
-                                Warren Buffett Portfolio Monitor
-                            </h1>
-                            <p className="text-gray-300 mb-2">
-                                Real-time monitoring of Berkshire Hathaway SEC filings
-                            </p>
-                            {lastChecked && (
-                                <p className="text-sm text-gray-400">
-                                    Last updated: {lastChecked.toLocaleString()}
-                                </p>
-                            )}
-                            <button
-                                onClick={fetchFilings}
-                                disabled={loading}
-                                className="mt-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white px-6 py-2 rounded-lg"
-                            >
-                                {loading ? 'Refreshing...' : 'Refresh Data'}
-                            </button>
-                        </div>
+            if (loading) {
+                return <div className="min-h-screen bg-slate-900 text-white p-8">
+                    <h1 className="text-4xl mb-4">Loading...</h1>
+                </div>;
+            }
 
-                        {error && (
-                            <div className="bg-red-500/20 rounded-xl p-6 mb-6 border border-red-400/30">
-                                <h3 className="text-red-200 font-bold mb-2">Connection Error</h3>
-                                <p className="text-red-200 mb-2">{error}</p>
-                                <p className="text-xs text-red-300">Backend: {API_URL}</p>
-                            </div>
-                        )}
-
-                        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                            <h2 className="text-2xl font-bold text-white mb-4">
-                                Live 13F Filings Feed
-                            </h2>
-
-                            {loading && (
-                                <div className="text-center py-12">
-                                    <div className="animate-spin w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
-                                    <p className="text-gray-300">Fetching live data from SEC...</p>
-                                </div>
-                            )}
-
-                            {!loading && !error && filings.length > 0 && (
-                                <div className="space-y-4">
-                                    <p className="text-green-300 mb-4">
-                                        Found {filings.length} recent filings
-                                    </p>
-                                    {filings.map((filing, index) => (
-                                        <div
-                                            key={filing.accessionNumber}
-                                            className="bg-black/30 rounded-lg p-6 border border-white/20"
-                                        >
-                                            <div className="flex items-start justify-between flex-wrap gap-4">
-                                                <div>
-                                                    {index === 0 && (
-                                                        <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full font-semibold mb-2 inline-block">
-                                                            LATEST
-                                                        </span>
-                                                    )}
-                                                    <h3 className="text-xl font-bold text-white mb-2">
-                                                        {filing.form}
-                                                    </h3>
-                                                    <p className="text-gray-300 mb-1">
-                                                        <span className="font-semibold">Filed:</span> {filing.filingDate}
-                                                    </p>
-                                                    <p className="text-gray-300 mb-1">
-                                                        <span className="font-semibold">Period:</span> {filing.reportDate}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 mt-2">
-                                                        {filing.accessionNumber}
-                                                    </p>
-                                                </div>
-                                                
-                                                    href={filing.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold"
-                                                >
-                                                    View on SEC.gov
-                                                </a>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {!loading && !error && filings.length === 0 && (
-                                <p className="text-gray-300 text-center py-8">
-                                    No filings found
-                                </p>
-                            )}
-                        </div>
-
-                    </div>
-                </div>
-            );
+            return <div className="min-h-screen bg-slate-900 text-white p-8">
+                <h1 className="text-4xl mb-8">Warren Buffett Portfolio Monitor</h1>
+                
+                {data && data.filings && <div>
+                    <h2 className="text-2xl mb-4">Found {data.filings.length} filings</h2>
+                    {data.filings.map((filing, i) => <div key={i} className="bg-gray-800 p-4 mb-4 rounded">
+                        <h3 className="text-xl font-bold">{filing.form}</h3>
+                        <p>Filed: {filing.filingDate}</p>
+                        <p>Period: {filing.reportDate}</p>
+                    </div>)}
+                </div>}
+            </div>;
         }
 
         ReactDOM.render(<App />, document.getElementById('root'));
