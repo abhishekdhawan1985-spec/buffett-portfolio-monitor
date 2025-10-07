@@ -1,0 +1,15 @@
+# Python dependencies for Warren Buffett Portfolio Monitor Backend
+# Note: These are built-in Python modules, no external dependencies needed
+# The server uses only standard library modules:
+# - http.server
+# - json
+# - time
+# - datetime
+# - urllib.request
+# - urllib.parse
+# - threading
+
+# If you want to add external dependencies in the future, add them here
+# For example:
+# requests==2.31.0
+# flask==2.3.3
