@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warren Buffett Portfolio Monitor</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function BuffettPortfolioMonitor() {
+            const [filings, setFilings] = useState([]);
+            const [holdings, setHoldings] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [lastChecked, setLastChecked] = useState(null);
+            const [activeTab, setActiveTab] = useState('holdings');
+
+            // Current portfolio data (as of latest 13F filing)
+            const portfolioData = {
+                totalValue: 257500000000, // $257.5 billion
+                totalHoldings: 41,
+                lastUpdated: '2024-06-30',
+                topHoldings: [
+                    {
+                        name: 'Apple Inc.',
+                        ticker: 'AAPL',
+                        shares: 280000000,
+                        value: 57447600000,
+                        percentage: 22.31,
+                        sector: 'Technology'
+                    },
+                    {
+                        name: 'American Express Co.',
+                        ticker: 'AXP',
+                        shares: 151610700,
+                        value: 48360781086,
+                        percentage: 18.78,
+                        sector: 'Financial Services'
+                    },
+                    {
+                        name: 'Bank of America Corp.',
+                        ticker: 'BAC',
+                        shares: 605267375,
+                        value: 28641252185,
+                        percentage: 11.12,
+                        sector: 'Financial Services'
+                    },
+                    {
+                        name: 'The Coca-Cola Company',
+                        ticker: 'KO',
+                        shares: 400000000,
+                        value: 28300000000,
+                        percentage: 10.99,
+                        sector: 'Consumer Staples'
+                    },
+                    {
+                        name: 'Chevron Corporation',
+                        ticker: 'CVX',
+                        shares: 122064792,
+                        value: 17478457567,
+                        percentage: 6.79,
+                        sector: 'Energy'
+                    },
+                    {
+                        name: 'Occidental Petroleum Corp.',
+                        ticker: 'OXY',
+                        shares: 248000000,
+                        value: 15000000000,
+                        percentage: 5.83,
+                        sector: 'Energy'
+                    },
+                    {
+                        name: 'Kraft Heinz Co.',
+                        ticker: 'KHC',
+                        shares: 325634818,
+                        value: 12000000000,
+                        percentage: 4.66,
+                        sector: 'Consumer Staples'
+                    },
+                    {
+                        name: 'Moody\'s Corporation',
+                        ticker: 'MCO',
+                        shares: 24666978,
+                        value: 9000000000,
+                        percentage: 3.50,
+                        sector: 'Financial Services'
+                    }
+                ]
+            };
+
+            const formatCurrency = (amount) => {
+                if (amount >= 1e9) {
+                    return `$${(amount / 1e9).toFixed(1)}B`;
+                } else if (amount >= 1e6) {
+                    return `$${(amount / 1e6).toFixed(1)}M`;
+                } else if (amount >= 1e3) {
+                    return `$${(amount / 1e3).toFixed(1)}K`;
+                }
+                return `$${amount.toFixed(0)}`;
+            };
+
+            const formatShares = (shares) => {
+                if (shares >= 1e9) {
+                    return `${(shares / 1e9).toFixed(1)}B`;
+                } else if (shares >= 1e6) {
+                    return `${(shares / 1e6).toFixed(1)}M`;
+                } else if (shares >= 1e3) {
+                    return `${(shares / 1e3).toFixed(1)}K`;
+                }
+                return shares.toLocaleString();
+            };
+
+            const fetchFilings = async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    // Mock filings data
+                    const mockFilings = [
+                        {
+                            form: '13F-HR',
+                            filingDate: '2024-02-14',
+                            reportDate: '2023-12-31',
+                            accessionNumber: '0001067983-24-000001',
+                            url: 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001067983&type=13F'
+                        },
+                        {
+                            form: '13F-HR',
+                            filingDate: '2023-11-14',
+                            reportDate: '2023-09-30',
+                            accessionNumber: '0001067983-23-000001',
+                            url: 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001067983&type=13F'
+                        },
+                        {
+                            form: '13F-HR',
+                            filingDate: '2023-08-14',
+                            reportDate: '2023-06-30',
+                            accessionNumber: '0001067983-23-000002',
+                            url: 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001067983&type=13F'
+                        }
+                    ];
+                    setFilings(mockFilings);
+                    setHoldings(portfolioData.topHoldings);
+                    setLastChecked(new Date());
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                fetchFilings();
+            }, []);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-6 border border-white/20">
+                            <h1 className="text-4xl font-bold text-white mb-2">
+                                Warren Buffett Portfolio Monitor 📊
+                            </h1>
+                            <p className="text-gray-300 mb-2">
+                                Real-time monitoring of Berkshire Hathaway's SEC filings and portfolio holdings
+                            </p>
+                            {lastChecked && (
+                                <p className="text-sm text-gray-400">
+                                    Last updated: {lastChecked.toLocaleString()}
+                                </p>
+                            )}
+                            <button
+                                onClick={fetchFilings}
+                                disabled={loading}
+                                className="mt-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white px-6 py-2 rounded-lg transition-colors"
+                            >
+                                {loading ? 'Refreshing...' : 'Refresh Data'}
+                            </button>
+                        </div>
+
+                        {/* Portfolio Summary */}
+                        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 border border-white/20">
+                            <h2 className="text-2xl font-bold text-white mb-4">💰 Portfolio Summary</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="bg-green-500/20 rounded-lg p-4 border border-green-400/30">
+                                    <h3 className="text-green-200 font-bold text-lg">Total Portfolio Value</h3>
+                                    <p className="text-green-100 text-3xl font-bold">{formatCurrency(portfolioData.totalValue)}</p>
+                                </div>
+                                <div className="bg-blue-500/20 rounded-lg p-4 border border-blue-400/30">
+                                    <h3 className="text-blue-200 font-bold text-lg">Total Holdings</h3>
+                                    <p className="text-blue-100 text-3xl font-bold">{portfolioData.totalHoldings}</p>
+                                </div>
+                                <div className="bg-purple-500/20 rounded-lg p-4 border border-purple-400/30">
+                                    <h3 className="text-purple-200 font-bold text-lg">Last Updated</h3>
+                                    <p className="text-purple-100 text-lg font-bold">{new Date(portfolioData.lastUpdated).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tab Navigation */}
+                        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 border border-white/20">
+                            <div className="flex space-x-4 mb-6">
+                                <button
+                                    onClick={() => setActiveTab('holdings')}
+                                    className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                                        activeTab === 'holdings'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                                    }`}
+                                >
+                                    📈 Current Holdings
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('filings')}
+                                    className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                                        activeTab === 'filings'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                                    }`}
+                                >
+                                    📄 SEC Filings
+                                </button>
+                            </div>
+
+                            {activeTab === 'holdings' && (
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white mb-4">Top Holdings</h2>
+                                    {loading ? (
+                                        <div className="text-center py-12">
+                                            <div className="animate-spin w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                            <p className="text-gray-300">Loading holdings data...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {holdings.map((holding, index) => (
+                                                <div
+                                                    key={holding.ticker}
+                                                    className="bg-black/30 rounded-lg p-6 border border-white/20 hover:bg-black/40 transition-all"
+                                                >
+                                                    <div className="flex items-center justify-between flex-wrap gap-4">
+                                                        <div className="flex items-center space-x-4">
+                                                            <div className="bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg">
+                                                                {index + 1}
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="text-xl font-bold text-white">{holding.name}</h3>
+                                                                <p className="text-gray-300">{holding.ticker} • {holding.sector}</p>
+                                                                <p className="text-sm text-gray-400">{formatShares(holding.shares)} shares</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-2xl font-bold text-green-400">{formatCurrency(holding.value)}</p>
+                                                            <p className="text-sm text-gray-400">{holding.percentage.toFixed(2)}% of portfolio</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {activeTab === 'filings' && (
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white mb-4">Recent 13F Filings</h2>
+                                    {loading ? (
+                                        <div className="text-center py-12">
+                                            <div className="animate-spin w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                            <p className="text-gray-300">Fetching filings data...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {filings.map((filing, index) => (
+                                                <div
+                                                    key={filing.accessionNumber}
+                                                    className="bg-black/30 rounded-lg p-6 border border-white/20 hover:bg-black/40 transition-all"
+                                                >
+                                                    <div className="flex items-start justify-between flex-wrap gap-4">
+                                                        <div>
+                                                            {index === 0 && (
+                                                                <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full font-semibold mb-2 inline-block animate-pulse">
+                                                                    LATEST FILING
+                                                                </span>
+                                                            )}
+                                                            <h3 className="text-xl font-bold text-white mb-2">
+                                                                {filing.form}
+                                                            </h3>
+                                                            <p className="text-gray-300 mb-1">
+                                                                <span className="font-semibold">Filed:</span> {new Date(filing.filingDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                            </p>
+                                                            <p className="text-gray-300 mb-1">
+                                                                <span className="font-semibold">Report Period:</span> {new Date(filing.reportDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 mt-2">
+                                                                Accession: {filing.accessionNumber}
+                                                            </p>
+                                                        </div>
+                                                        <a
+                                                            href={filing.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors font-semibold"
+                                                        >
+                                                            View on SEC.gov →
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-6 bg-blue-500/10 rounded-xl p-6 border border-blue-400/20">
+                            <h3 className="text-white font-bold mb-2">💡 About This Dashboard</h3>
+                            <p className="text-blue-200 text-sm">
+                                This dashboard shows Warren Buffett's current portfolio holdings and recent SEC filings. 
+                                The portfolio data is based on the latest 13F-HR filing and shows Berkshire Hathaway's 
+                                top holdings with current market values and portfolio percentages.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<BuffettPortfolioMonitor />, document.getElementById('root'));
+    </script>
+</body>
+</html>

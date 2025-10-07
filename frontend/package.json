@@ -1,0 +1,14 @@
+{
+  "name": "buffett-portfolio-frontend",
+  "version": "1.0.0",
+  "description": "Warren Buffett Portfolio Monitor Frontend",
+  "main": "dataroma-enhanced.html",
+  "scripts": {
+    "build": "echo 'Static site - no build needed'",
+    "start": "echo 'Static site - open dataroma-enhanced.html'"
+  },
+  "keywords": ["warren-buffett", "portfolio", "investing", "berkshire-hathaway"],
+  "author": "Your Name",
+  "license": "MIT",
+  "homepage": "https://your-netlify-app.netlify.app"
+}

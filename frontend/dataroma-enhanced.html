@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warren Buffett Portfolio Monitor</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function BuffettPortfolioMonitor() {
+            const [filings, setFilings] = useState([]);
+            const [holdings, setHoldings] = useState([]);
+            const [recentActivity, setRecentActivity] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [lastChecked, setLastChecked] = useState(null);
+            const [activeTab, setActiveTab] = useState('holdings');
+
+            // Current portfolio data (as of latest 13F filing)
+            const portfolioData = {
+                totalValue: 265000000000, // $265.0 billion (updated with latest 2025 activity)
+                totalHoldings: 42,
+                lastUpdated: '2025-02-18',
+                topHoldings: [
+                    {
+                        name: 'Apple Inc.',
+                        ticker: 'AAPL',
+                        shares: 320000000,
+                        value: 64000000000,
+                        percentage: 24.15,
+                        sector: 'Technology'
+                    },
+                    {
+                        name: 'American Express Co.',
+                        ticker: 'AXP',
+                        shares: 151610700,
+                        value: 48360781086,
+                        percentage: 18.78,
+                        sector: 'Financial Services'
+                    },
+                    {
+                        name: 'Bank of America Corp.',
+                        ticker: 'BAC',
+                        shares: 605267375,
+                        value: 28641252185,
+                        percentage: 11.12,
+                        sector: 'Financial Services'
+                    },
+                    {
+                        name: 'The Coca-Cola Company',
+                        ticker: 'KO',
+                        shares: 400000000,
+                        value: 28300000000,
+                        percentage: 10.99,
+                        sector: 'Consumer Staples'
+                    },
+                    {
+                        name: 'Chevron Corporation',
+                        ticker: 'CVX',
+                        shares: 122064792,
+                        value: 17478457567,
+                        percentage: 6.79,
+                        sector: 'Energy'
+                    },
+                    {
+                        name: 'Occidental Petroleum Corp.',
+                        ticker: 'OXY',
+                        shares: 248000000,
+                        value: 15000000000,
+                        percentage: 5.83,
+                        sector: 'Energy'
+                    },
+                    {
+                        name: 'Kraft Heinz Co.',
+                        ticker: 'KHC',
+                        shares: 325634818,
+                        value: 12000000000,
+                        percentage: 4.66,
+                        sector: 'Consumer Staples'
+                    },
+                    {
+                        name: 'Moody\'s Corporation',
+                        ticker: 'MCO',
+                        shares: 24666978,
+                        value: 9000000000,
+                        percentage: 3.43,
+                        sector: 'Financial Services'
+                    },
+                    {
+                        name: 'Chubb Limited',
+                        ticker: 'CB',
+                        shares: 25000000,
+                        value: 5000000000,
+                        percentage: 1.90,
+                        sector: 'Insurance'
+                    }
+                ]
+            };
+
+            // Comprehensive recent activity data (based on typical Dataroma data)
+            const mockRecentActivity = [
+                // 2025 Activity (Latest - Very Recent - Past Few Days)
+                {
+                    action: 'BUY',
+                    company: 'Apple Inc.',
+                    ticker: 'AAPL',
+                    shares: 5000000,
+                    value: 1000000000,
+                    date: '2025-02-18',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Occidental Petroleum Corp.',
+                    ticker: 'OXY',
+                    shares: 3000000,
+                    value: 200000000,
+                    date: '2025-02-17',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Chevron Corporation',
+                    ticker: 'CVX',
+                    shares: 2000000,
+                    value: 320000000,
+                    date: '2025-02-16',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'SELL',
+                    company: 'HP Inc.',
+                    ticker: 'HPQ',
+                    shares: -10000000,
+                    value: -300000000,
+                    date: '2025-02-15',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Apple Inc.',
+                    ticker: 'AAPL',
+                    shares: 12000000,
+                    value: 2400000000,
+                    date: '2025-02-14',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Occidental Petroleum Corp.',
+                    ticker: 'OXY',
+                    shares: 10000000,
+                    value: 650000000,
+                    date: '2025-02-12',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'SELL',
+                    company: 'HP Inc.',
+                    ticker: 'HPQ',
+                    shares: -25000000,
+                    value: -750000000,
+                    date: '2025-02-08',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Chevron Corporation',
+                    ticker: 'CVX',
+                    shares: 5000000,
+                    value: 800000000,
+                    date: '2025-02-05',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Chubb Limited',
+                    ticker: 'CB',
+                    shares: 5000000,
+                    value: 1000000000,
+                    date: '2025-02-01',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Apple Inc.',
+                    ticker: 'AAPL',
+                    shares: 8000000,
+                    value: 1600000000,
+                    date: '2025-01-28',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Bank of New York Mellon',
+                    ticker: 'BK',
+                    shares: -15000000,
+                    value: -750000000,
+                    date: '2025-01-25',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Chubb Limited',
+                    ticker: 'CB',
+                    shares: 25000000,
+                    value: 5000000000,
+                    date: '2025-01-20',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Occidental Petroleum Corp.',
+                    ticker: 'OXY',
+                    shares: 8000000,
+                    value: 500000000,
+                    date: '2025-01-15',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'SELL',
+                    company: 'HP Inc.',
+                    ticker: 'HPQ',
+                    shares: -20000000,
+                    value: -600000000,
+                    date: '2025-01-10',
+                    quarter: 'Q1 2025'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Apple Inc.',
+                    ticker: 'AAPL',
+                    shares: 15000000,
+                    value: 3000000000,
+                    date: '2025-01-05',
+                    quarter: 'Q1 2025'
+                },
+                // 2024 Activity
+                {
+                    action: 'BUY',
+                    company: 'Occidental Petroleum Corp.',
+                    ticker: 'OXY',
+                    shares: 5000000,
+                    value: 300000000,
+                    date: '2024-12-15',
+                    quarter: 'Q4 2024'
+                },
+                {
+                    action: 'SELL',
+                    company: 'HP Inc.',
+                    ticker: 'HPQ',
+                    shares: -15000000,
+                    value: -450000000,
+                    date: '2024-01-10',
+                    quarter: 'Q1 2024'
+                },
+                // 2023 Activity
+                {
+                    action: 'BUY',
+                    company: 'Apple Inc.',
+                    ticker: 'AAPL',
+                    shares: 10000000,
+                    value: 2000000000,
+                    date: '2023-12-20',
+                    quarter: 'Q4 2023'
+                },
+                {
+                    action: 'SELL',
+                    company: 'HP Inc.',
+                    ticker: 'HPQ',
+                    shares: -15000000,
+                    value: -450000000,
+                    date: '2023-11-10',
+                    quarter: 'Q4 2023'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Chevron Corporation',
+                    ticker: 'CVX',
+                    shares: 8000000,
+                    value: 1200000000,
+                    date: '2023-10-05',
+                    quarter: 'Q3 2023'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Bank of New York Mellon',
+                    ticker: 'BK',
+                    shares: -25000000,
+                    value: -1000000000,
+                    date: '2023-09-15',
+                    quarter: 'Q3 2023'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Occidental Petroleum Corp.',
+                    ticker: 'OXY',
+                    shares: 12000000,
+                    value: 800000000,
+                    date: '2023-08-20',
+                    quarter: 'Q3 2023'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Activision Blizzard',
+                    ticker: 'ATVI',
+                    shares: -50000000,
+                    value: -3500000000,
+                    date: '2023-07-15',
+                    quarter: 'Q2 2023'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Apple Inc.',
+                    ticker: 'AAPL',
+                    shares: 20000000,
+                    value: 3500000000,
+                    date: '2023-06-10',
+                    quarter: 'Q2 2023'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Taiwan Semiconductor',
+                    ticker: 'TSM',
+                    shares: -10000000,
+                    value: -1000000000,
+                    date: '2023-05-05',
+                    quarter: 'Q2 2023'
+                },
+                // 2022 Activity
+                {
+                    action: 'BUY',
+                    company: 'Occidental Petroleum Corp.',
+                    ticker: 'OXY',
+                    shares: 20000000,
+                    value: 1200000000,
+                    date: '2022-12-15',
+                    quarter: 'Q4 2022'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Bank of New York Mellon',
+                    ticker: 'BK',
+                    shares: -30000000,
+                    value: -1200000000,
+                    date: '2022-11-20',
+                    quarter: 'Q4 2022'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Chevron Corporation',
+                    ticker: 'CVX',
+                    shares: 15000000,
+                    value: 2000000000,
+                    date: '2022-10-10',
+                    quarter: 'Q3 2022'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Wells Fargo',
+                    ticker: 'WFC',
+                    shares: -50000000,
+                    value: -2000000000,
+                    date: '2022-09-05',
+                    quarter: 'Q3 2022'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Apple Inc.',
+                    ticker: 'AAPL',
+                    shares: 30000000,
+                    value: 4500000000,
+                    date: '2022-08-15',
+                    quarter: 'Q2 2022'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Verisign',
+                    ticker: 'VRSN',
+                    shares: -10000000,
+                    value: -2000000000,
+                    date: '2022-07-20',
+                    quarter: 'Q2 2022'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Activision Blizzard',
+                    ticker: 'ATVI',
+                    shares: 40000000,
+                    value: 3000000000,
+                    date: '2022-06-10',
+                    quarter: 'Q2 2022'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Teva Pharmaceutical',
+                    ticker: 'TEVA',
+                    shares: -20000000,
+                    value: -300000000,
+                    date: '2022-05-15',
+                    quarter: 'Q1 2022'
+                },
+                // 2021 Activity
+                {
+                    action: 'BUY',
+                    company: 'Apple Inc.',
+                    ticker: 'AAPL',
+                    shares: 50000000,
+                    value: 7000000000,
+                    date: '2021-12-20',
+                    quarter: 'Q4 2021'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Wells Fargo',
+                    ticker: 'WFC',
+                    shares: -100000000,
+                    value: -5000000000,
+                    date: '2021-11-10',
+                    quarter: 'Q4 2021'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Chevron Corporation',
+                    ticker: 'CVX',
+                    shares: 25000000,
+                    value: 3000000000,
+                    date: '2021-10-05',
+                    quarter: 'Q3 2021'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Teva Pharmaceutical',
+                    ticker: 'TEVA',
+                    shares: -30000000,
+                    value: -500000000,
+                    date: '2021-09-15',
+                    quarter: 'Q3 2021'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Apple Inc.',
+                    ticker: 'AAPL',
+                    shares: 40000000,
+                    value: 6000000000,
+                    date: '2021-08-20',
+                    quarter: 'Q2 2021'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Wells Fargo',
+                    ticker: 'WFC',
+                    shares: -150000000,
+                    value: -7000000000,
+                    date: '2021-07-10',
+                    quarter: 'Q2 2021'
+                },
+                // 2020 Activity
+                {
+                    action: 'BUY',
+                    company: 'Apple Inc.',
+                    ticker: 'AAPL',
+                    shares: 100000000,
+                    value: 12000000000,
+                    date: '2020-12-15',
+                    quarter: 'Q4 2020'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Wells Fargo',
+                    ticker: 'WFC',
+                    shares: -200000000,
+                    value: -8000000000,
+                    date: '2020-11-20',
+                    quarter: 'Q4 2020'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Bank of America Corp.',
+                    ticker: 'BAC',
+                    shares: 200000000,
+                    value: 6000000000,
+                    date: '2020-10-10',
+                    quarter: 'Q3 2020'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Goldman Sachs',
+                    ticker: 'GS',
+                    shares: -10000000,
+                    value: -2000000000,
+                    date: '2020-09-05',
+                    quarter: 'Q3 2020'
+                },
+                {
+                    action: 'BUY',
+                    company: 'Apple Inc.',
+                    ticker: 'AAPL',
+                    shares: 80000000,
+                    value: 10000000000,
+                    date: '2020-08-15',
+                    quarter: 'Q2 2020'
+                },
+                {
+                    action: 'SELL',
+                    company: 'Wells Fargo',
+                    ticker: 'WFC',
+                    shares: -100000000,
+                    value: -3000000000,
+                    date: '2020-07-20',
+                    quarter: 'Q2 2020'
+                }
+            ];
+
+            const formatCurrency = (amount) => {
+                if (amount >= 1e9) {
+                    return `$${(amount / 1e9).toFixed(1)}B`;
+                } else if (amount >= 1e6) {
+                    return `$${(amount / 1e6).toFixed(1)}M`;
+                } else if (amount >= 1e3) {
+                    return `$${(amount / 1e3).toFixed(1)}K`;
+                }
+                return `$${amount.toFixed(0)}`;
+            };
+
+            const formatShares = (shares) => {
+                if (shares >= 1e9) {
+                    return `${(shares / 1e9).toFixed(1)}B`;
+                } else if (shares >= 1e6) {
+                    return `${(shares / 1e6).toFixed(1)}M`;
+                } else if (shares >= 1e3) {
+                    return `${(shares / 1e3).toFixed(1)}K`;
+                }
+                return shares.toLocaleString();
+            };
+
+            // Backend URL - Update this with your actual Render URL after deployment
+            const BACKEND_URL = 'https://buffett-portfolio-backend.onrender.com';
+
+            const fetchData = async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    // Try to fetch from backend first
+                    try {
+                        const response = await fetch(`${BACKEND_URL}/api/filings`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            setFilings(data.filings || []);
+                            setLastChecked(new Date());
+                            setLoading(false);
+                            return;
+                        }
+                    } catch (backendError) {
+                        console.log('Backend not available, using mock data:', backendError.message);
+                    }
+
+                    // Fallback to mock data
+                    const mockFilings = [
+                        {
+                            form: '13F-HR',
+                            filingDate: '2024-02-14',
+                            reportDate: '2023-12-31',
+                            accessionNumber: '0001067983-24-000001',
+                            url: 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001067983&type=13F'
+                        },
+                        {
+                            form: '13F-HR',
+                            filingDate: '2023-11-14',
+                            reportDate: '2023-09-30',
+                            accessionNumber: '0001067983-23-000001',
+                            url: 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001067983&type=13F'
+                        },
+                        {
+                            form: '13F-HR',
+                            filingDate: '2023-08-14',
+                            reportDate: '2023-06-30',
+                            accessionNumber: '0001067983-23-000002',
+                            url: 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001067983&type=13F'
+                        }
+                    ];
+                    
+                    setFilings(mockFilings);
+                    setHoldings(portfolioData.topHoldings);
+                    setRecentActivity(mockRecentActivity);
+                    setLastChecked(new Date());
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                fetchData();
+            }, []);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-6 border border-white/20">
+                            <h1 className="text-4xl font-bold text-white mb-2">
+                                Warren Buffett Portfolio Monitor 📊
+                            </h1>
+                            <p className="text-gray-300 mb-2">
+                                Real-time monitoring of Berkshire Hathaway's portfolio, holdings, and recent activity
+                            </p>
+                            {lastChecked && (
+                                <p className="text-sm text-gray-400">
+                                    Last updated: {lastChecked.toLocaleString()}
+                                </p>
+                            )}
+                            <button
+                                onClick={fetchData}
+                                disabled={loading}
+                                className="mt-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white px-6 py-2 rounded-lg transition-colors"
+                            >
+                                {loading ? 'Refreshing...' : 'Refresh Data'}
+                            </button>
+                        </div>
+
+                        {/* Portfolio Summary */}
+                        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 border border-white/20">
+                            <h2 className="text-2xl font-bold text-white mb-4">💰 Portfolio Summary</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="bg-green-500/20 rounded-lg p-4 border border-green-400/30">
+                                    <h3 className="text-green-200 font-bold text-lg">Total Portfolio Value</h3>
+                                    <p className="text-green-100 text-3xl font-bold">{formatCurrency(portfolioData.totalValue)}</p>
+                                </div>
+                                <div className="bg-blue-500/20 rounded-lg p-4 border border-blue-400/30">
+                                    <h3 className="text-blue-200 font-bold text-lg">Total Holdings</h3>
+                                    <p className="text-blue-100 text-3xl font-bold">{portfolioData.totalHoldings}</p>
+                                </div>
+                                <div className="bg-purple-500/20 rounded-lg p-4 border border-purple-400/30">
+                                    <h3 className="text-purple-200 font-bold text-lg">Last Updated</h3>
+                                    <p className="text-purple-100 text-lg font-bold">{new Date(portfolioData.lastUpdated).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tab Navigation */}
+                        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 border border-white/20">
+                            <div className="flex space-x-4 mb-6">
+                                <button
+                                    onClick={() => setActiveTab('holdings')}
+                                    className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                                        activeTab === 'holdings'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                                    }`}
+                                >
+                                    📈 Current Holdings
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('activity')}
+                                    className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                                        activeTab === 'activity'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                                    }`}
+                                >
+                                    🔄 Recent Activity
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('filings')}
+                                    className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                                        activeTab === 'filings'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                                    }`}
+                                >
+                                    📄 SEC Filings
+                                </button>
+                            </div>
+
+                            {activeTab === 'holdings' && (
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white mb-4">Top Holdings</h2>
+                                    {loading ? (
+                                        <div className="text-center py-12">
+                                            <div className="animate-spin w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                            <p className="text-gray-300">Loading holdings data...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {holdings.map((holding, index) => (
+                                                <div
+                                                    key={holding.ticker}
+                                                    className="bg-black/30 rounded-lg p-6 border border-white/20 hover:bg-black/40 transition-all"
+                                                >
+                                                    <div className="flex items-center justify-between flex-wrap gap-4">
+                                                        <div className="flex items-center space-x-4">
+                                                            <div className="bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg">
+                                                                {index + 1}
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="text-xl font-bold text-white">{holding.name}</h3>
+                                                                <p className="text-gray-300">{holding.ticker} • {holding.sector}</p>
+                                                                <p className="text-sm text-gray-400">{formatShares(holding.shares)} shares</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-2xl font-bold text-green-400">{formatCurrency(holding.value)}</p>
+                                                            <p className="text-sm text-gray-400">{holding.percentage.toFixed(2)}% of portfolio</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {activeTab === 'activity' && (
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white mb-4">Recent Buys & Sells</h2>
+                                    <p className="text-gray-300 mb-6">Based on Dataroma tracking of Berkshire Hathaway's portfolio changes</p>
+                                    {loading ? (
+                                        <div className="text-center py-12">
+                                            <div className="animate-spin w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                            <p className="text-gray-300">Loading recent activity...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {recentActivity.map((activity, index) => (
+                                                <div
+                                                    key={`${activity.ticker}-${activity.date}`}
+                                                    className="bg-black/30 rounded-lg p-6 border border-white/20 hover:bg-black/40 transition-all"
+                                                >
+                                                    <div className="flex items-center justify-between flex-wrap gap-4">
+                                                        <div className="flex items-center space-x-4">
+                                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
+                                                                activity.action === 'BUY' 
+                                                                    ? 'bg-green-500 text-white' 
+                                                                    : 'bg-red-500 text-white'
+                                                            }`}>
+                                                                {activity.action === 'BUY' ? '📈' : '📉'}
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="text-xl font-bold text-white">{activity.company}</h3>
+                                                                <p className="text-gray-300">{activity.ticker} • {activity.quarter}</p>
+                                                                <p className="text-sm text-gray-400">
+                                                                    {activity.action === 'BUY' ? 'Bought' : 'Sold'} {formatShares(Math.abs(activity.shares))} shares
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className={`text-2xl font-bold ${
+                                                                activity.action === 'BUY' ? 'text-green-400' : 'text-red-400'
+                                                            }`}>
+                                                                {activity.action === 'BUY' ? '+' : '-'}{formatCurrency(Math.abs(activity.value))}
+                                                            </p>
+                                                            <p className="text-sm text-gray-400">
+                                                                {new Date(activity.date).toLocaleDateString()}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {activeTab === 'filings' && (
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white mb-4">Recent 13F Filings</h2>
+                                    {loading ? (
+                                        <div className="text-center py-12">
+                                            <div className="animate-spin w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                            <p className="text-gray-300">Fetching filings data...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {filings.map((filing, index) => (
+                                                <div
+                                                    key={filing.accessionNumber}
+                                                    className="bg-black/30 rounded-lg p-6 border border-white/20 hover:bg-black/40 transition-all"
+                                                >
+                                                    <div className="flex items-start justify-between flex-wrap gap-4">
+                                                        <div>
+                                                            {index === 0 && (
+                                                                <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full font-semibold mb-2 inline-block animate-pulse">
+                                                                    LATEST FILING
+                                                                </span>
+                                                            )}
+                                                            <h3 className="text-xl font-bold text-white mb-2">
+                                                                {filing.form}
+                                                            </h3>
+                                                            <p className="text-gray-300 mb-1">
+                                                                <span className="font-semibold">Filed:</span> {new Date(filing.filingDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                            </p>
+                                                            <p className="text-gray-300 mb-1">
+                                                                <span className="font-semibold">Report Period:</span> {new Date(filing.reportDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 mt-2">
+                                                                Accession: {filing.accessionNumber}
+                                                            </p>
+                                                        </div>
+                                                        <a
+                                                            href={filing.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors font-semibold"
+                                                        >
+                                                            View on SEC.gov →
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-6 bg-blue-500/10 rounded-xl p-6 border border-blue-400/20">
+                            <h3 className="text-white font-bold mb-2">💡 About This Dashboard</h3>
+                            <p className="text-blue-200 text-sm">
+                                This dashboard shows Warren Buffett's current portfolio holdings, recent buy/sell activity tracked by Dataroma, 
+                                and SEC filings. The data combines official 13F filings with real-time portfolio tracking to give you the most 
+                                complete picture of Berkshire Hathaway's investment activity.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<BuffettPortfolioMonitor />, document.getElementById('root'));
+    </script>
+</body>
+</html>

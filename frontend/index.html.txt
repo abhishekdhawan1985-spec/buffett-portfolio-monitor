@@ -11,18 +11,18 @@
 </head>
 <body>
     <div id="root"></div>
-
+    
     <script type="text/babel">
         const { useState, useEffect } = React;
-
+        
         function BuffettPortfolioMonitor() {
             const [filings, setFilings] = useState([]);
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
             const [lastChecked, setLastChecked] = useState(null);
-
-            // Use localhost for local development
-            const API_URL = 'http://localhost:3001';
+            
+            // REPLACE THIS with your actual Render backend URL
+            const API_URL = ‘https://buffett-portfolio-monitor.onrender.com’;
 
             const fetchFilings = async () => {
                 setLoading(true);
@@ -76,7 +76,7 @@
                                     Backend URL: {API_URL}
                                 </p>
                                 <p className="text-xs text-red-300 mt-2">
-                                    Make sure your backend is running on port 3001!
+                                    Make sure your backend is deployed and the URL is correct!
                                 </p>
                             </div>
                         )}
@@ -123,7 +123,7 @@
                                                         Accession: {filing.accessionNumber}
                                                     </p>
                                                 </div>
-                                                <a
+                                                
                                                     href={filing.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
